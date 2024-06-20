@@ -1,176 +1,101 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
-const cfgPath string = "stress_cfg/"
-const cfgFilename string = "config.json"
-
-type config struct {
-	FilePath     string   `json:"filepath"`
-	Compare      bool     `json:"compare"`
-	Removeout    bool     `json:"removeout"`
-	FileNum      int      `json:"filenum"`
-	Files        []string `json:"files"`
-	Languages    []string `json:"languages"`
-	Compilators  []string `json:"compilators"`
-	CompileFlags []string `json:"compileflags"`
-
-	FilenPaths     []string `json:"filenpaths"`
-	FilenPathsExec []string `json:"filenpathsexec"`
-	FilenPathsComp []string `json:"filenpathscomp"`
-	OutFilenPath   []string `json:"outfilenpath"`
-}
-
-func writeFilenPaths(mode int, cfg config) (filenPaths []string) {
-	for i, file := range cfg.Files {
-		var filenPath string
-		if mode == 1 { // exec compilated
-			if cfg.Languages[i] == "Python" {
-				filenPath = cfg.Compilators[i] + " " + cfg.FilePath + file
-			} else {
-				filenPath = cfg.FilePath + "./" + eraseExt(file)
-			}
-		}
-		if mode == 2 { // compilated
-			if cfg.Languages[i] == "Python" {
-				continue
-			} else {
-				filenPath = cfg.FilePath + eraseExt(file)
-			}
-		}
-		if mode == 3 { // outfiles
-			filenPath = cfg.FilePath + eraseExt(file) + ".out"
-		}
-		if mode == 4 { // no changes
-			filenPath = cfg.FilePath + file
-		}
-		filenPaths = append(filenPaths, filenPath)
-	}
-	return
-}
-
-func eraseExt(filename string) string {
-	filename = filename[:len(filename)-len(filepath.Ext(filename))]
-	return filename
-}
-
-func setupCfg(fileName string, rewrite bool) (cfg config, err error) {
-	writed := false
-	cfgFile, err := os.OpenFile(cfgPath+fileName, os.O_WRONLY, os.ModePerm)
-	if os.IsNotExist(err) {
-		err = os.MkdirAll(cfgPath, os.ModePerm)
-		if err != nil && !os.IsExist(err) {
-			fmt.Fprintln(os.Stderr, err)
-			fmt.Fprint(os.Stderr, "Mkdir error\n")
-			return
-		}
-		_, err = createCfgFile(fileName)
-		if err != nil {
-			return
-		}
-		cfgFile, err = os.OpenFile(cfgPath+fileName, os.O_WRONLY, os.ModePerm)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			fmt.Fprint(os.Stderr, "File open after create error\n")
-			return
-		}
-		inputConfig(cfgFile)
-		writed = true
-	} else if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprint(os.Stderr, "File open error\n")
-		return
-	}
-	defer cfgFile.Close()
-	if !writed && rewrite {
-		inputConfig(cfgFile)
-	}
-	cfg, err = readCfgFile(cfgFile)
-	return
-}
-
-func readCfgFile(cfgFile *os.File) (cfg config, err error) {
-	var cfgjson []byte
-	fmt.Fscan(cfgFile, &cfgjson)
-	err = json.Unmarshal(cfgjson, &cfg)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprint(os.Stderr, "Unmarshall error\n")
-		return
-	}
-	return
-}
-func createCfgFile(cfgName string) (cfgFile *os.File, err error) {
-	cfgFile, err = os.OpenFile(cfgPath+cfgName, os.O_CREATE, os.ModePerm)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprint(os.Stderr, "File create error\n")
-		return
-	}
-	return
-}
-
-func inputConfig(cfgFile *os.File) {
+func cfgwrite() (err error) {
 	var cfg config
-	fmt.Print("Enter path to your code...\n")
-	fmt.Scan(&cfg.FilePath)
-	fmt.Print("Enter number of files, last file must be generator...\n")
-	fmt.Scan(&cfg.FileNum)
-	if cfg.FileNum == 3 {
-		fmt.Print("Check comparison? Y/n \n")
-		var comparisonFlag string
-		fmt.Scan(&comparisonFlag)
-		if comparisonFlag == "Y" || comparisonFlag == "y" {
-			cfg.Compare = true
-		}
-	}
-	fmt.Print("Remove .txt files? Y/n\n")
-	var rmtxt string
-	fmt.Scan(&rmtxt)
-	if rmtxt == "Y" || rmtxt == "y" {
-		cfg.Removeout = true
-	}
-	for i := 0; i < cfg.FileNum; i++ {
-		fmt.Printf("Enter %d filename\n", i+1)
-		var filename string
-		fmt.Scan(&filename)
-		cfg.Files = append(cfg.Files, filename)
-	}
-	for i := 0; i < cfg.FileNum; i++ {
-		fmt.Printf("Enter %d file language (Python / C++ / C)\n", i+1)
-		var lang string
-		fmt.Scan(&lang)
-		cfg.Languages = append(cfg.Languages, lang)
-	}
-	for i := 0; i < cfg.FileNum; i++ {
-		fmt.Printf("Enter %d file compilator (g++, python3, etc.) \n", i+1)
-		var compilator string
-		fmt.Scan(&compilator)
-		cfg.Compilators = append(cfg.Compilators, compilator)
-	}
-	for i := 0; i < cfg.FileNum; i++ {
-		fmt.Printf("Enter %d file compile flags or 0 if not (without -) \n", i+1)
-		var compileFlag string
-		fmt.Scan(&compileFlag)
-		if compileFlag == "0" {
-			continue
-		}
-		cfg.CompileFlags = append(cfg.CompileFlags, compileFlag)
-	}
-	cfg.FilenPathsExec = writeFilenPaths(1, cfg)
-	cfg.FilenPathsComp = writeFilenPaths(2, cfg)
-	cfg.OutFilenPath = writeFilenPaths(3, cfg)
-	cfg.FilenPaths = writeFilenPaths(4, cfg)
-	cfgjson, err := json.Marshal(cfg)
+	err = readcurcfg()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprint(os.Stderr, "Marshal error\n")
 		return
 	}
-	fmt.Fprint(cfgFile, cfgjson)
+	fmt.Println("Input 1st solution's filename (with path): ")
+	fmt.Scan(&cfg.Solve1)
+	fmt.Println("Input 2nd solution's filename (with path): ")
+	fmt.Scan(&cfg.Solve2)
+	fmt.Println("Input generator's filename: ")
+	fmt.Scan(&cfg.Generator)
+	fmt.Println("Input your compiler (clang++ or g++): ")
+	fmt.Scan(&cfg.Compiler)
+
+	_, err = os.OpenFile(string(homedir+"/shar/"+curcfg), os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	cfgfile, err := os.OpenFile(string(homedir+"/shar/"+curcfg), os.O_WRONLY, os.ModePerm)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	err = cfgwritefile(cfgfile, cfg)
+	return
+}
+
+func cfgnew() (err error) {
+	var newcfg string
+	fmt.Println("Input name of config")
+	fmt.Scan(&newcfg)
+	_, err = os.Create(string(homedir + "/shar/" + newcfg))
+	if os.IsExist(err) {
+		fmt.Println("File is exist")
+	}
+	if err != nil {
+		fmt.Println(err)
+	}
+	return
+}
+
+func cfgdelete() (err error) {
+	var delcfg string
+	fmt.Println("Input name of config")
+	fmt.Scan(&delcfg)
+	err = os.Remove(string(homedir + "/shar/" + delcfg))
+	if os.IsNotExist(err) {
+		fmt.Println("File isn't exist")
+	}
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	return
+}
+
+func cfgselect() (err error) {
+	var selcfg string
+	fmt.Println("Input name of config")
+	fmt.Scan(&selcfg)
+	err = writecurcfg(selcfg)
+	return
+}
+
+func cfgmain() (err error) {
+	if len(os.Args) < 3 {
+		fmt.Println("Not enough args")
+		return
+	}
+	switch os.Args[2] {
+	case "new":
+		err = cfgnew()
+	case "delete":
+		err = cfgdelete()
+	case "select":
+		err = cfgselect()
+	case "write":
+		err = cfgwrite()
+	case "current":
+		err = readcurcfg()
+		if err != nil {
+			return
+		}
+		fmt.Println("Current config is", curcfg)
+	default:
+		fmt.Println("Unknown command")
+	}
+	if err != nil {
+		return
+	}
+	return
 }
