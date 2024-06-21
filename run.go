@@ -67,7 +67,7 @@ func tempout() (err error) {
 	return
 }
 
-func test(num int) (err error) {
+func test(num int) (wa bool, err error) {
 	result := true
 	err = shellcmd(homedir + "/shar/./gen > " + homedir + "/shar/gen.o")
 	if err != nil {
@@ -120,6 +120,7 @@ func test(num int) (err error) {
 		fmt.Println("Time 2nd:", time2)
 		fmt.Println("----------------------")
 	case false:
+		wa = true
 		fmt.Println("----------------------")
 		fmt.Println("\t  WA\t")
 		fmt.Println("----------------------")
@@ -129,7 +130,7 @@ func test(num int) (err error) {
 		testfile, err := os.Open(homedir + "/shar/gen.o")
 		if err != nil {
 			fmt.Println(err)
-			return err
+			return wa, err
 		}
 		defer testfile.Close()
 		test := bufio.NewScanner(testfile)
@@ -142,13 +143,13 @@ func test(num int) (err error) {
 			file1, err = os.Open(homedir + "/shar/out1.o")
 			if err != nil {
 				fmt.Println(err)
-				return err
+				return wa, err
 			}
 			defer file1.Close()
 			file2, err = os.Open(homedir + "/shar/out2.o")
 			if err != nil {
 				fmt.Println(err)
-				return err
+				return wa, err
 			}
 			out1 = bufio.NewScanner(file1)
 			out2 = bufio.NewScanner(file2)
@@ -202,9 +203,12 @@ func runmain() (err error) {
 		return
 	}
 	for i := range iters {
-		err = test(i + 1)
+		wa, err := test(i + 1)
 		if err != nil {
 			return
+		}
+		if wa {
+			break
 		}
 	}
 	return
