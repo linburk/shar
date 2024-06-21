@@ -36,8 +36,12 @@ func cfgwrite() (err error) {
 
 func cfgnew() (err error) {
 	var newcfg string
-	fmt.Println("Input name of config")
-	fmt.Scan(&newcfg)
+	if len(os.Args) < 4 {
+		fmt.Println("Input name of config")
+		fmt.Scan(&newcfg)
+	} else {
+		newcfg = os.Args[3]
+	}
 	_, err = os.Create(string(homedir + "/shar/" + newcfg))
 	if os.IsExist(err) {
 		fmt.Println("File is exist")
@@ -50,8 +54,12 @@ func cfgnew() (err error) {
 
 func cfgdelete() (err error) {
 	var delcfg string
-	fmt.Println("Input name of config")
-	fmt.Scan(&delcfg)
+	if len(os.Args) < 4 {
+		fmt.Println("Input name of config")
+		fmt.Scan(&delcfg)
+	} else {
+		delcfg = os.Args[3]
+	}
 	err = os.Remove(string(homedir + "/shar/" + delcfg))
 	if os.IsNotExist(err) {
 		fmt.Println("File isn't exist")
@@ -65,8 +73,12 @@ func cfgdelete() (err error) {
 
 func cfgselect() (err error) {
 	var selcfg string
-	fmt.Println("Input name of config")
-	fmt.Scan(&selcfg)
+	if len(os.Args) < 4 {
+		fmt.Println("Input name of config")
+		fmt.Scan(&selcfg)
+	} else {
+		selcfg = os.Args[3]
+	}
 	err = writecurcfg(selcfg)
 	return
 }

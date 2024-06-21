@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-var defaultsmessage string = "Shar - program for stress-testing\n\t-config\n\t\t-new\n\t\tcreate new config file\n\t\t-delete\n\t\tdelete config file\n\t\t-select\n\t\tselect config file\n\t\t-write\n\t\tinput current config file\n\t\t-current\n\t\tprint current config\n\n\t-run [iters]\n\tstart stress-test with current config"
+var defaultsmessage string = "Usage:\n  shar config\n   \tnew [<name>]\n   \tdelete [<name>]\n   \tselect [<name>]\n   \twrite\n   \tcurrent\n  shar run <iters>\n"
 
 func main() {
 	var err error
