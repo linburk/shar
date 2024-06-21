@@ -205,7 +205,7 @@ func runmain() (err error) {
 	for i := range iters {
 		wa, err := test(i + 1)
 		if err != nil {
-			return
+			return err
 		}
 		if wa {
 			break
