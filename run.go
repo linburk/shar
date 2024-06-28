@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"runtime"
 	"strconv"
 	"time"
 )
@@ -16,13 +15,7 @@ var cfg config
 var stderr bytes.Buffer
 
 func shellcmd(command string) (err error) {
-	var cmd exec.Cmd
-	switch runtime.GOOS {
-	case "windows":
-		fmt.Println("Удали виндоус")
-	default:
-		cmd = *exec.Command("/bin/zsh", "-c", command)
-	}
+	cmd := *exec.Command("/bin/zsh", "-c", command)
 	cmd.Stderr = &stderr
 	err = cmd.Run()
 	if err != nil {
@@ -67,7 +60,7 @@ func tempout() (err error) {
 	return
 }
 
-func test(num int) (wa bool, err error) {
+func test_nochecker(num int) (wa bool, err error) {
 	result := true
 	err = shellcmd(homedir + "/shar/./gen > " + homedir + "/shar/gen.o")
 	if err != nil {
@@ -168,6 +161,89 @@ func test(num int) (wa bool, err error) {
 	return
 }
 
+func test_checker(num int) (wa bool, err error) {
+	result := true
+	err = shellcmd(homedir + "/shar/./gen > " + homedir + "/shar/gen.o")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	start1 := time.Now()
+	err = shellcmd(homedir + "/shar/./solve1 < " + homedir + "/shar/gen.o > " + homedir + "/shar/out1.o")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	time1 := time.Since(start1)
+	err = shellcmd(homedir + "/shar/./solve2 < " + homedir + "/shar/gen.o < " + homedir + "/shar/out1.o > " + homedir + "/shar/out2.o")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	file2, err := os.Open(homedir + "/shar/out2.o")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer file2.Close()
+	{
+		var temp string
+		fmt.Fscan(file2, &temp)
+		if temp != "OK" {
+			result = false
+		}
+	}
+	fmt.Printf("\tTest %d\n", num)
+	switch result {
+	case true:
+		fmt.Println("----------------------")
+		fmt.Println("\t  OK\t")
+		fmt.Println("----------------------")
+		fmt.Println("Time:", time1)
+		fmt.Println("----------------------")
+	case false:
+		wa = true
+		fmt.Println("----------------------")
+		fmt.Println("\t  WA\t")
+		fmt.Println("----------------------")
+		fmt.Println("Time:", time1)
+		fmt.Println("----------------------\nTest case:")
+		testfile, err := os.Open(homedir + "/shar/gen.o")
+		if err != nil {
+			fmt.Println(err)
+			return wa, err
+		}
+		defer testfile.Close()
+		test := bufio.NewScanner(testfile)
+		for test.Scan() {
+			fmt.Println(test.Text())
+		}
+		file1, err := os.Open(homedir + "/shar/out1.o")
+		if err != nil {
+			fmt.Println(err)
+			return wa, err
+		}
+		defer file1.Close()
+		file2, err = os.Open(homedir + "/shar/out2.o")
+		if err != nil {
+			fmt.Println(err)
+			return wa, err
+		}
+		out1 := bufio.NewScanner(file1)
+		out2 := bufio.NewScanner(file2)
+		fmt.Println("1st solve's output:")
+		for out1.Scan() {
+			fmt.Println(out1.Text())
+		}
+		fmt.Println("Checker output:")
+		for out2.Scan() {
+			fmt.Println(out2.Text())
+		}
+		fmt.Println("----------------------")
+	}
+	return
+}
+
 func runmain() (err error) {
 	if len(os.Args) < 3 {
 		fmt.Println("Not enough args")
@@ -203,7 +279,12 @@ func runmain() (err error) {
 		return
 	}
 	for i := range iters {
-		wa, err := test(i + 1)
+		var wa bool
+		if cfg.Checker {
+			wa, err = test_checker(i + 1)
+		} else {
+			wa, err = test_nochecker(i + 1)
+		}
 		if err != nil {
 			return err
 		}

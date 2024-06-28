@@ -12,9 +12,9 @@ var curcfg string
 type config struct {
 	Generator string `json:"generator"`
 	Solve1    string `json:"working"`
-	Solve2    string `json:"optimal"`
-	Removeout bool   `json:"removeout"`
+	Solve2    string `json:"checkerorsolve"`
 	Compiler  string `json:"gnuorclang"`
+	Checker   bool   `json:"checker"`
 }
 
 func cfgreadfile(cfgfile *os.File) (cfg config, err error) {
@@ -68,7 +68,7 @@ func dircheckcurcfg() (err error) {
 }
 
 func writecurcfg(cfgname string) (err error) {
-	filecurcfg, err := os.OpenFile(string(homedir+"/shar/cur.cfg"), os.O_WRONLY, os.ModePerm)
+	filecurcfg, err := os.OpenFile(string(homedir+"/shar/cur.cfg"), os.O_TRUNC|os.O_WRONLY, os.ModePerm)
 	if err != nil {
 		fmt.Println(err)
 		return

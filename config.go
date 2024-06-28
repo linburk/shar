@@ -11,11 +11,19 @@ func cfgwrite() (err error) {
 	if err != nil {
 		return
 	}
-	fmt.Println("Input 1st solution's filename (with path): ")
+	fmt.Println("Input 1st solution's filepath: ")
 	fmt.Scan(&cfg.Solve1)
-	fmt.Println("Input 2nd solution's filename (with path): ")
+	fmt.Println("Input checker/2nd solution's filepath: ")
 	fmt.Scan(&cfg.Solve2)
-	fmt.Println("Input generator's filename: ")
+	fmt.Println("Checker? Y/n ")
+	{
+		var temp string
+		fmt.Scan(&temp)
+		if temp == "Y" || temp == "y" {
+			cfg.Checker = true
+		}
+	}
+	fmt.Println("Input generator's filepath: ")
 	fmt.Scan(&cfg.Generator)
 	fmt.Println("Input your compiler (clang++ or g++): ")
 	fmt.Scan(&cfg.Compiler)
